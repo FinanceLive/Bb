@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>W-View | تطبيق الفيديوهات القصيرة</title>
+    <style>
+        /* [1] إعدادات عامة */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+            touch-action: pan-y;
+            overflow-x: hidden;
+        }
+
+        /* [2] هيكل التطبيق الرئيسي */
+        #app {
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+            z-index: 100;
+            text-align: center;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff0050;
+        }
+
+        /* [3] حاوية الفيديوهات */
+        .video-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease;
+        }
+        .video-item {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* [4] معلومات الفيديو */
+        .video-info {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            max-width: 80%;
+            z-index: 10;
+        }
+        .video-title {
+            font-size: 18px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+        .video-description {
+            font-size: 14px;
+            opacity: 0.8;
+            text-shadow: 0 0 3px rgba(0,0,0,0.8);
+        }
+
+        /* [5] أزرار التفاعل */
+        .actions {
+            position: absolute;
+            right: 20px;
+            bottom: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            margin: 15px 0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .action-icon {
+            font-size: 28px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .action-count {
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        /* [6] رسالة التحميل */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: white;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <!-- [1] هيكل التطبيق الأساسي -->
+    <div id="app">
+        <div class="header">
+            <div class="logo">W-View</div>
+        </div>
+        
+        <!-- [2] حاوية الفيديوهات -->
+        <div class="video-container" id="videoContainer"></div>
+        
+        <!-- [3] رسالة التحميل -->
+        <div class="loading" id="loading">جاري تحميل الفيديوهات...</div>
+    </div>
+
+    <!-- [4] مكتبة Hammer.js للسحب -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+
+    <script>
+        // ========= [1] بيانات التطبيق =========
+        const videos = [
+            {
+                id: 1,
+                url: 'https://assets.mixkit.co/videos/preview/mixkit-tree-with-yellow-flowers-1173-large.mp4',
+                title: 'منظر طبيعي خلاب',
+                description: 'أشجار مزهرة في يوم مشمس',
+                likes: 245,
+                comments: 32,
+                shares: 12
+            },
+            {
+                id: 2,
+                url: 'https://assets.mixkit.co/videos/preview/mixkit-woman-dancing-under-neon-lights-1230-large.mp4',
+                title: 'رقص تحت الأضواء',
+                description: 'أداء رقص احترافي',
+                likes: 532,
+                comments: 87,
+                shares: 45
+            },
+            {
+                id: 3,
+                url: 'https://assets.mixkit.co/videos/preview/mixkit-man-doing-tricks-with-a-skateboard-34550-large.mp4',
+                title: 'حركات تزلج مميزة',
+                description: 'أفضل الحركات على اللوح',
+                likes: 321,
+                comments: 45,
+                shares: 23
+            }
+            // يمكن إضافة المزيد من الفيديوهات هنا
+        ];
+
+        // ========= [2] متغيرات التطبيق =========
+        let currentIndex = 0;
+        let videoElements = [];
+        let hammertime;
+
+        // ========= [3] تهيئة التطبيق =========
+        function initApp() {
+            const videoContainer = document.getElementById('videoContainer');
+            const loadingElement = document.getElementById('loading');
+
+            // إنشاء عناصر الفيديو
+            videos.forEach((video, index) => {
+                const videoItem = createVideoElement(video, index);
+                videoContainer.appendChild(videoItem);
+            });
+
+            // إخفاء رسالة التحميل
+            loadingElement.style.display = 'none';
+
+            // تشغيل الفيديو الأول
+            playCurrentVideo();
+
+            // تهيئة نظام السحب
+            initSwipeSystem();
+        }
+
+        // ========= [4] إنشاء عنصر فيديو =========
+        function createVideoElement(video, index) {
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            videoItem.dataset.id = video.id;
+            videoItem.style.transform = `translateY(${index * 100}%)`;
+
+            // عنصر الفيديو
+            const videoElement = document.createElement('video');
+            videoElement.src = video.url;
+            videoElement.loop = true;
+            videoElement.playsInline = true;
+            videoElement.muted = true; // مهم للتشغيل التلقائي
+
+            // معلومات الفيديو
+            const videoInfo = document.createElement('div');
+            videoInfo.className = 'video-info';
+            videoInfo.innerHTML = `
+                <h3 class="video-title">${video.title}</h3>
+                <p class="video-description">${video.description}</p>
+            `;
+
+            // أزرار التفاعل
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            actions.innerHTML = `
+                <button class="action-btn" onclick="likeVideo(${video.id})">
+                    <span class="action-icon">❤️</span>
+                    <span class="action-count">${video.likes}</span>
+                </button>
+                <button class="action-btn" onclick="commentVideo(${video.id})">
+                    <span class="action-icon">💬</span>
+                    <span class="action-count">${video.comments}</span>
+                </button>
+                <button class="action-btn" onclick="shareVideo(${video.id})">
+                    <span class="action-icon">↗️</span>
+                    <span class="action-count">${video.shares}</span>
+                </button>
+            `;
+
+            videoItem.appendChild(videoElement);
+            videoItem.appendChild(videoInfo);
+            videoItem.appendChild(actions);
+
+            videoElements.push({
+                element: videoItem,
+                video: videoElement,
+                id: video.id
+            });
+
+            return videoItem;
+        }
+
+        // ========= [5] نظام السحب =========
+        function initSwipeSystem() {
+            hammertime = new Hammer(document.getElementById('app'));
+            hammertime.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });
+
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+
+            hammertime.on('panstart', function(e) {
+                isDragging = true;
+                startY = e.center.y;
+                pauseCurrentVideo();
+            });
+
+            hammertime.on('panmove', function(e) {
+                if (!isDragging) return;
+                currentY = e.center.y - startY;
+                updateVideoPosition();
+            });
+
+            hammertime.on('panend', function() {
+                if (!isDragging) return;
+                isDragging = false;
+
+                const threshold = window.innerHeight / 4;
+                if (Math.abs(currentY) > threshold) {
+                    if (currentY < 0 && currentIndex < videos.length - 1) {
+                        currentIndex++; // سحب لأعلى
+                    } else if (currentY > 0 && currentIndex > 0) {
+                        currentIndex--; // سحب لأسفل
+                    }
+                }
+
+                animateToCurrentVideo();
+            });
+        }
+
+        // ========= [6] التحكم بالفيديوهات =========
+        function playCurrentVideo() {
+            videoElements.forEach((item, index) => {
+                if (index === currentIndex) {
+                    item.video.play()
+                        .then(() => console.log("تم تشغيل الفيديو"))
+                        .catch(e => console.log("خطأ في التشغيل:", e));
+                } else {
+                    item.video.pause();
+                    item.video.currentTime = 0;
+                }
+            });
+        }
+
+        function pauseCurrentVideo() {
+            if (videoElements[currentIndex]) {
+                videoElements[currentIndex].video.pause();
+            }
+        }
+
+        function updateVideoPosition() {
+            videoElements.forEach((item, index) => {
+                const offset = (index - currentIndex) * 100 + (currentY / window.innerHeight * 100);
+                item.element.style.transform = `translateY(${offset}%)`;
+            });
+        }
+
+        function animateToCurrentVideo() {
+            videoElements.forEach((item, index) => {
+                const offset = (index - currentIndex) * 100;
+                item.element.style.transition = 'transform 0.3s ease-out';
+                item.element.style.transform = `translateY(${offset}%)`;
+
+                setTimeout(() => {
+                    item.element.style.transition = '';
+                }, 300);
+            });
+
+            setTimeout(() => {
+                playCurrentVideo();
+            }, 300);
+        }
+
+        // ========= [7] نظام التفاعل =========
+        function likeVideo(videoId) {
+            const video = videos.find(v => v.id === videoId);
+            if (video) {
+                video.likes++;
+                updateActionCounts(videoId);
+            }
+        }
+
+        function commentVideo(videoId) {
+            const comment = prompt('اكتب تعليقك:');
+            if (comment) {
+                const video = videos.find(v => v.id === videoId);
+                if (video) {
+                    video.comments++;
+                    updateActionCounts(videoId);
+                }
+            }
+        }
+
+        function shareVideo(videoId) {
+            const video = videos.find(v => v.id === videoId);
+            if (video) {
+                video.shares++;
+                updateActionCounts(videoId);
+                alert('تم نسخ رابط الفيديو: ' + video.url);
+            }
+        }
+
+        function updateActionCounts(videoId) {
+            const video = videos.find(v => v.id === videoId);
+            if (!video) return;
+
+            const videoElement = videoElements.find(v => v.id === videoId);
+            if (!videoElement) return;
+
+            const actionButtons = videoElement.element.querySelectorAll('.action-btn');
+            if (actionButtons.length >= 3) {
+                actionButtons[0].querySelector('.action-count').textContent = video.likes;
+                actionButtons[1].querySelector('.action-count').textContent = video.comments;
+                actionButtons[2].querySelector('.action-count').textContent = video.shares;
+            }
+        }
+
+        // ========= [8] بدء التطبيق =========
+        window.addEventListener('DOMContentLoaded', () => {
+            // انتظر تحميل Hammer.js إذا لم يكن محملاً
+            if (typeof Hammer === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js';
+                script.onload = initApp;
+                document.head.appendChild(script);
+            } else {
+                initApp();
+            }
+        });
+
+        // تفعيل الصوت عند النقر
+        document.addEventListener('click', function() {
+            videoElements.forEach(item => {
+                item.video.muted = false;
+            });
+        }, { once: true });
+    </script>
+</body>
+</html>
