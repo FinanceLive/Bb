@@ -1,99 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    حموشي - حاسبة الميزانية الشخصية</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <header>
-        <div class="container">
-            <img src="images/logo.png" alt="شعار شهريتي" class="logo">
-            <h1>شهريتي</h1>
-            <p>أداة ذكية لإدارة ميزانيتك الشهرية</p>
-        </div>
-    </header>
-
-    <main class="container">
-        <section class="calculator">
-            <div class="income-section">
-                <h2><i class="icon">💰</i> الدخل الشهري</h2>
-                <div class="form-group">
-                    <label for="income">إجمالي الدخل (ريال سعودي):</label>
-                    <input type="number" id="income" placeholder="أدخل إجمالي دخلك الشهري">
-                </div>
-            </div>
-
-            <div class="expenses-section">
-                <h2><i class="icon">💸</i> النفقات الثابتة</h2>
-                
-                <div class="expense-categories">
-                    <div class="form-group">
-                        <label for="rent">الإيجار/الرهن العقاري:</label>
-                        <input type="number" id="rent" placeholder="المبلغ الشهري">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="utilities">المرافق (كهرباء، ماء، إلخ):</label>
-                        <input type="number" id="utilities" placeholder="المبلغ الشهري">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="transportation">المواصلات:</label>
-                        <input type="number" id="transportation" placeholder="المبلغ الشهري">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="food">الطعام والمشروبات:</label>
-                        <input type="number" id="food" placeholder="المبلغ الشهري">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="other">نفقات أخرى:</label>
-                        <input type="number" id="other" placeholder="المبلغ الشهري">
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="calculateBudget()" class="calculate-btn">
-                <i class="icon">🧮</i> حساب الميزانية
-            </button>
-            
-            <div id="result" class="result">
-                <h2><i class="icon">📊</i> ملخص الميزانية</h2>
-                <div class="summary-box">
-                    <div class="summary-item">
-                        <span>إجمالي الدخل:</span>
-                        <span id="total-income">0 ريال</span>
-                    </div>
-                    <div class="summary-item">
-                        <span>إجمالي النفقات:</span>
-                        <span id="total-expenses">0 ريال</span>
-                    </div>
-                    <div class="summary-item highlight">
-                        <span>المدخرات/العجز:</span>
-                        <span id="savings">0 ريال</span>
-                    </div>
-                </div>
-                
-                <div id="advice" class="advice-box">
-                    <h3><i class="icon">💡</i> نصائح مالية</h3>
-                    <p id="advice-text">أدخل بياناتك للحصول على نصائح مخصصة</p>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>© 2023 شهريتي - جميع الحقوق محفوظة</p>
-        </div>
-    </footer>
-
-    <script src="script.js"></script>
-</body>
-</html>
